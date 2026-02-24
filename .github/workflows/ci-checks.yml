@@ -45,6 +45,20 @@ jobs:
           email: ${{ secrets.FLYWAY_EMAIL }}
           token: ${{ secrets.FLYWAY_TOKEN }}
 
+      - name: Seed target database (simulate prior deployments)
+        run: |
+          flyway migrate \
+            -environment=staging \
+            -url="jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Staging;encrypt=true;trustServerCertificate=true" \
+            -user=sa \
+            -password="Flyway123!"
+
+      - name: Introduce out-of-band change (simulate drift)
+        run: |
+          docker exec ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U sa -P 'Flyway123!' -C -Q \
+            "USE [FlywaySample_Staging]; ALTER TABLE users ADD phone_number NVARCHAR(50) NULL;"
+
       - name: Run pre-deployment checks
         id: checks
         uses: red-gate/flyway-actions/migrations/checks@v1
