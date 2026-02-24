@@ -8,87 +8,13 @@ on:
       - 'flyway.toml'
 
 jobs:
-  migration-checks:
-    name: Pre-deployment checks
-    runs-on: ubuntu-latest
-    environment: ci
-    services:
-      sqlserver:
-        image: mcr.microsoft.com/mssql/server:2022-latest
-        env:
-          ACCEPT_EULA: "Y"
-          MSSQL_SA_PASSWORD: "Flyway123!"
-        ports:
-          - 1433:1433
-        options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Flyway123!' -C -Q 'SELECT 1' || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 10s
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Create databases
-        run: |
-          docker exec ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U sa -P 'Flyway123!' -C -Q "CREATE DATABASE [FlywaySample_Staging]"
-          docker exec ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U sa -P 'Flyway123!' -C -Q "CREATE DATABASE [FlywaySample_Build]"
-
-      - name: Setup Flyway
-        uses: red-gate/setup-flyway@v3
-        with:
-          edition: enterprise
-          i-agree-to-the-eula: true
-          email: ${{ secrets.FLYWAY_EMAIL }}
-          token: ${{ secrets.FLYWAY_TOKEN }}
-
-      - name: Seed target database (simulate prior deployments)
-        run: |
-          flyway migrate \
-            -environment=staging \
-            -url="jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Staging;encrypt=true;trustServerCertificate=true" \
-            -user=sa \
-            -password="Flyway123!" \
-            -target=003
-
-      - name: Introduce out-of-band change (simulate drift)
-        run: |
-          docker exec ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U sa -P 'Flyway123!' -C -Q \
-            "USE [FlywaySample_Staging]; ALTER TABLE users ADD phone_number NVARCHAR(50) NULL;"
-
-      - name: Run pre-deployment checks
-        id: checks
-        uses: red-gate/flyway-actions/migrations/checks@v1
-        with:
-          target-environment: staging
-          target-url: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Staging;encrypt=true;trustServerCertificate=true"
-          target-user: sa
-          target-password: "Flyway123!"
-          build-environment: build
-          build-url: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Build;encrypt=true;trustServerCertificate=true"
-          build-user: sa
-          build-password: "Flyway123!"
-          build-ok-to-erase: true
-          # Enterprise checks - all enabled
-          skip-code-review: false
-          skip-drift-check: false
-          skip-deployment-changes-report: false
-          skip-deployment-script-review: false
-          fail-on-code-review: true
-          fail-on-drift: true
-
-      - name: Report summary
-        if: always()
-        run: |
-          echo "### Migration Check Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| Drift detected | \`${{ steps.checks.outputs.drift-detected }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Changed objects | \`${{ steps.checks.outputs.changed-object-count }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Code violations | \`${{ steps.checks.outputs.code-violation-count }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Violation codes | \`${{ steps.checks.outputs.code-violation-codes }}\` |" >> $GITHUB_STEP_SUMMARY
+  checks:
+    uses: ./.github/workflows/zzz-checks.yml
+    with:
+      target-environment: staging
+      database-name: FlywaySample_Staging
+      environment: ci
+      seed-drift: true
+    secrets:
+      FLYWAY_EMAIL: ${{ secrets.FLYWAY_EMAIL }}
+      FLYWAY_TOKEN: ${{ secrets.FLYWAY_TOKEN }}

@@ -1,6 +1,6 @@
 [flyway]
 defaultSchema = "dbo"
-locations = ["filesystem:migrations/sql"]
+locations = ["filesystem:migrations"]
 
 [environments.dev]
 url = "${DEV_DATABASE_URL}"
