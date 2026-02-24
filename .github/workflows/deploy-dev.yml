@@ -65,8 +65,6 @@ jobs:
           skip-deployment-script-review: false
           fail-on-code-review: true
           fail-on-drift: true
-          # Report artifact
-          pre-deployment-report-name: flyway-dev-report
 
       - name: Check results summary
         if: always()

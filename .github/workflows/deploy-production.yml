@@ -77,9 +77,6 @@ jobs:
           skip-deployment-script-review: false
           fail-on-code-review: true
           fail-on-drift: true
-          # Report artifact
-          pre-deployment-report-name: flyway-production-report
-          pre-deployment-report-retention-days: 30
 
       - name: Check results summary
         if: always()
