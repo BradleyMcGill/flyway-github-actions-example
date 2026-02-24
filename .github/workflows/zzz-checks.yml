@@ -77,7 +77,7 @@ jobs:
           email: ${{ secrets.FLYWAY_EMAIL }}
           token: ${{ secrets.FLYWAY_TOKEN }}
 
-      - name: Seed target database and save snapshot (simulate prior deployment)
+      - name: Seed target database (simulate prior deployments)
         if: inputs.seed-drift
         run: |
           flyway migrate \
@@ -85,8 +85,16 @@ jobs:
             -url="jdbc:sqlserver://localhost:1433;databaseName=${{ inputs.database-name }};encrypt=true;trustServerCertificate=true" \
             -user=sa \
             -password="Flyway123!" \
-            -target=003 \
-            -saveSnapshot
+            -target=003
+
+      - name: Save deployment snapshot (baseline for drift comparison)
+        if: inputs.seed-drift
+        run: |
+          flyway snapshot \
+            -filename=deployed-snapshot.json \
+            -url="jdbc:sqlserver://localhost:1433;databaseName=${{ inputs.database-name }};encrypt=true;trustServerCertificate=true" \
+            -user=sa \
+            -password="Flyway123!"
 
       - name: Introduce out-of-band change (simulate drift)
         if: inputs.seed-drift
@@ -116,6 +124,7 @@ jobs:
           skip-deployment-script-review: false
           fail-on-code-review: true
           fail-on-drift: true
+          extra-args: ${{ inputs.seed-drift && '-check.deployedSnapshot=deployed-snapshot.json' || '' }}
           pre-deployment-report-name: flyway-${{ inputs.target-environment }}-report
 
       - name: Check results summary
