@@ -14,7 +14,6 @@ jobs:
       target-environment: staging
       database-name: FlywaySample_Staging
       environment: ci
-      seed-drift: true
     secrets:
       FLYWAY_EMAIL: ${{ secrets.FLYWAY_EMAIL }}
       FLYWAY_TOKEN: ${{ secrets.FLYWAY_TOKEN }}
