@@ -51,7 +51,8 @@ jobs:
             -environment=staging \
             -url="jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Staging;encrypt=true;trustServerCertificate=true" \
             -user=sa \
-            -password="Flyway123!"
+            -password="Flyway123!" \
+            -target=003
 
       - name: Introduce out-of-band change (simulate drift)
         run: |
