@@ -12,9 +12,30 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     environment: staging-read-only
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Flyway123!"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Flyway123!' -C -Q 'SELECT 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 10s
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Create databases
+        run: |
+          docker exec ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U sa -P 'Flyway123!' -C -Q "CREATE DATABASE [FlywaySample_Staging]"
+          docker exec ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U sa -P 'Flyway123!' -C -Q "CREATE DATABASE [FlywaySample_Build]"
 
       - name: Setup Flyway
         uses: red-gate/setup-flyway@v3
@@ -29,11 +50,13 @@ jobs:
         uses: red-gate/flyway-actions/migrations/checks@v1
         with:
           target-environment: staging
-          target-user: ${{ secrets.STAGING_DATABASE_USER }}
-          target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
+          target-url: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Staging;encrypt=true;trustServerCertificate=true"
+          target-user: sa
+          target-password: "Flyway123!"
           build-environment: build
-          build-user: ${{ secrets.BUILD_DATABASE_USER }}
-          build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+          build-url: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Build;encrypt=true;trustServerCertificate=true"
+          build-user: sa
+          build-password: "Flyway123!"
           build-ok-to-erase: true
           # Enterprise checks - all enabled
           skip-code-review: false
@@ -63,9 +86,28 @@ jobs:
     needs: checks
     runs-on: ubuntu-latest
     environment: staging
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Flyway123!"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Flyway123!' -C -Q 'SELECT 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 10s
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Create databases
+        run: |
+          docker exec ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U sa -P 'Flyway123!' -C -Q "CREATE DATABASE [FlywaySample_Staging]"
 
       - name: Setup Flyway
         uses: red-gate/setup-flyway@v3
@@ -80,8 +122,9 @@ jobs:
         uses: red-gate/flyway-actions/migrations/deploy@v1
         with:
           target-environment: staging
-          target-user: ${{ secrets.STAGING_DATABASE_USER }}
-          target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
+          target-url: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Staging;encrypt=true;trustServerCertificate=true"
+          target-user: sa
+          target-password: "Flyway123!"
           skip-drift-check: false
 
       - name: Deployment summary
