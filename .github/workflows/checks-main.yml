@@ -1,0 +1,16 @@
+name: Run checks on main
+
+on:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    uses: ./.github/workflows/zzz-checks.yml
+    with:
+      target-environment: dev
+      database-name: FlywaySample_Dev
+      environment: ci
+      skip-drift-check: true
+    secrets:
+      FLYWAY_EMAIL: ${{ secrets.FLYWAY_EMAIL }}
+      FLYWAY_TOKEN: ${{ secrets.FLYWAY_TOKEN }}
