@@ -87,6 +87,17 @@ jobs:
             -password="Flyway123!" \
             -target=003
 
+      - name: Save deployment snapshot (baseline for drift comparison)
+        if: inputs.seed-drift
+        run: |
+          flyway snapshot \
+            -snapshot.filename=snapshot.json \
+            -snapshot.source=database \
+            -environment=${{ inputs.target-environment }} \
+            -url="jdbc:sqlserver://localhost:1433;databaseName=${{ inputs.database-name }};encrypt=true;trustServerCertificate=true" \
+            -user=sa \
+            -password="Flyway123!"
+
       - name: Introduce out-of-band change (simulate drift)
         if: inputs.seed-drift
         run: |
@@ -115,6 +126,7 @@ jobs:
           skip-deployment-script-review: false
           fail-on-code-review: true
           fail-on-drift: true
+          pre-deployment-report-name: flyway-${{ inputs.target-environment }}-report
 
       - name: Check results summary
         if: always()
@@ -123,7 +135,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| Drift detected | \`${{ steps.checks.outputs.drift-detected || '-' }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Changed objects | \`${{ steps.checks.outputs.changed-object-count || '-' }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Code violations | \`${{ steps.checks.outputs.code-violation-count || '-' }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Violation codes | \`${{ steps.checks.outputs.code-violation-codes || '-' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Drift detected | \`${{ steps.checks.outputs.drift-detected }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Changed objects | \`${{ steps.checks.outputs.changed-object-count }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code violations | \`${{ steps.checks.outputs.code-violation-count }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Violation codes | \`${{ steps.checks.outputs.code-violation-codes }}\` |" >> $GITHUB_STEP_SUMMARY
