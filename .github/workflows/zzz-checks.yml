@@ -96,7 +96,6 @@ jobs:
 
       - name: Run pre-deployment checks
         id: checks
-        continue-on-error: true
         uses: red-gate/flyway-actions/migrations/checks@v1
         with:
           target-environment: ${{ inputs.target-environment }}
@@ -124,13 +123,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| Drift detected | \`${{ steps.checks.outputs.drift-detected }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Changed objects | \`${{ steps.checks.outputs.changed-object-count }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Code violations | \`${{ steps.checks.outputs.code-violation-count }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Violation codes | \`${{ steps.checks.outputs.code-violation-codes }}\` |" >> $GITHUB_STEP_SUMMARY
-
-      - name: Fail if checks detected issues
-        if: steps.checks.outcome == 'failure'
-        run: |
-          echo "::error::Pre-deployment checks failed — see details above"
-          exit 1
+          echo "| Drift detected | \`${{ steps.checks.outputs.drift-detected || '-' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Changed objects | \`${{ steps.checks.outputs.changed-object-count || '-' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code violations | \`${{ steps.checks.outputs.code-violation-count || '-' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Violation codes | \`${{ steps.checks.outputs.code-violation-codes || '-' }}\` |" >> $GITHUB_STEP_SUMMARY
