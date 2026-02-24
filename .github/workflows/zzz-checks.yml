@@ -125,16 +125,95 @@ jobs:
           fail-on-code-review: true
           fail-on-drift: true
           extra-args: ${{ inputs.seed-drift && '-check.deployedSnapshot=deployed-snapshot.json' || '' }}
-          pre-deployment-report-name: flyway-${{ inputs.target-environment }}-report
+
+      - name: Upload pre-deployment report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flyway-${{ inputs.target-environment }}-report
+          path: report.html
+          if-no-files-found: ignore
+
+      - name: Upload drift resolution scripts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flyway-${{ inputs.target-environment }}-drift-resolution
+          path: drift-resolution/
+          if-no-files-found: ignore
 
       - name: Check results summary
         if: always()
         run: |
-          echo "### ${{ inputs.target-environment }} Pre-Deployment Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "## ${{ inputs.target-environment }} Pre-Deployment Check Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| Drift detected | \`${{ steps.checks.outputs.drift-detected }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Changed objects | \`${{ steps.checks.outputs.changed-object-count }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Code violations | \`${{ steps.checks.outputs.code-violation-count }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Violation codes | \`${{ steps.checks.outputs.code-violation-codes }}\` |" >> $GITHUB_STEP_SUMMARY
+
+          if [ ! -f report.json ]; then
+            echo "> No report generated — checks may not have run." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          # --- Deployment Script Review (dryrun) ---
+          DRYRUN=$(jq -r '.individualResults[]? | select(.operation=="dryrun") // empty' report.json 2>/dev/null)
+          if [ -n "$DRYRUN" ]; then
+            echo "### Deployment Script Review" >> $GITHUB_STEP_SUMMARY
+            echo '```sql' >> $GITHUB_STEP_SUMMARY
+            jq -r '.individualResults[] | select(.operation=="dryrun") | .dryRunScript // "No script generated"' report.json >> $GITHUB_STEP_SUMMARY 2>/dev/null
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # --- Code Review ---
+          CODE_RESULTS=$(jq -r '[.individualResults[]? | select(.operation=="code")] | length' report.json 2>/dev/null)
+          if [ "$CODE_RESULTS" -gt 0 ] 2>/dev/null; then
+            TOTAL_VIOLATIONS=$(jq -r '[.individualResults[] | select(.operation=="code") | .results[]?.violations[]?] | length' report.json 2>/dev/null)
+            echo "### Code Review" >> $GITHUB_STEP_SUMMARY
+            if [ "$TOTAL_VIOLATIONS" -gt 0 ] 2>/dev/null; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**$TOTAL_VIOLATIONS violation(s) found:**" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "| File | Line | Rule | Severity | Description |" >> $GITHUB_STEP_SUMMARY
+              echo "|------|------|------|----------|-------------|" >> $GITHUB_STEP_SUMMARY
+              jq -r '.individualResults[] | select(.operation=="code") | .results[]? as $r | $r.violations[]? | "| \($r.filepath // "-" | split("/") | last) | \(.line // "-") | `\(.code // "-")` | \(.severity // "-") | \(.description // "-") |"' report.json >> $GITHUB_STEP_SUMMARY 2>/dev/null
+            else
+              echo "No violations found." >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # --- Drift Detection ---
+          DRIFT_RESULTS=$(jq -r '[.individualResults[]? | select(.operation=="drift")] | length' report.json 2>/dev/null)
+          if [ "$DRIFT_RESULTS" -gt 0 ] 2>/dev/null; then
+            echo "### Drift Detection" >> $GITHUB_STEP_SUMMARY
+            IN_TARGET=$(jq -r '[.individualResults[] | select(.operation=="drift") | .onlyInTarget[]?] | length' report.json 2>/dev/null)
+            IN_SOURCE=$(jq -r '[.individualResults[] | select(.operation=="drift") | .onlyInSource[]?] | length' report.json 2>/dev/null)
+            DIFFS=$(jq -r '[.individualResults[] | select(.operation=="drift") | .differences[]?] | length' report.json 2>/dev/null)
+            if [ "$((IN_TARGET + IN_SOURCE + DIFFS))" -gt 0 ] 2>/dev/null; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Drift detected!** Objects have changed outside of Flyway." >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "| Category | Object |" >> $GITHUB_STEP_SUMMARY
+              echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+              jq -r '.individualResults[] | select(.operation=="drift") | (.onlyInTarget[]? | "| Added to database | `\(.)`  |"), (.onlyInSource[]? | "| Removed from database | `\(.)` |"), (.differences[]? | "| Modified | `\(.)` |")' report.json >> $GITHUB_STEP_SUMMARY 2>/dev/null
+            else
+              echo "No drift detected." >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # --- Deployment Changes ---
+          CHANGES_RESULTS=$(jq -r '[.individualResults[]? | select(.operation=="changes")] | length' report.json 2>/dev/null)
+          if [ "$CHANGES_RESULTS" -gt 0 ] 2>/dev/null; then
+            echo "### Deployment Changes" >> $GITHUB_STEP_SUMMARY
+            TOTAL_CHANGES=$(jq -r '[.individualResults[] | select(.operation=="changes") | (.onlyInSource[]?, .onlyInTarget[]?, .differences[]?)] | length' report.json 2>/dev/null)
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**$TOTAL_CHANGES object(s) will be changed:**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Category | Object |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+            jq -r '.individualResults[] | select(.operation=="changes") | (.onlyInTarget[]? | "| New | `\(.)` |"), (.onlyInSource[]? | "| Removed | `\(.)` |"), (.differences[]? | "| Modified | `\(.)` |")' report.json >> $GITHUB_STEP_SUMMARY 2>/dev/null
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Download the full HTML report from the **Artifacts** section.*" >> $GITHUB_STEP_SUMMARY
