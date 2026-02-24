@@ -1,0 +1,27 @@
+[flyway]
+defaultSchema = "dbo"
+locations = ["filesystem:migrations/sql"]
+
+[environments.dev]
+url = "${DEV_DATABASE_URL}"
+user = "${DEV_DATABASE_USER}"
+password = "${DEV_DATABASE_PASSWORD}"
+schemas = ["dbo"]
+
+[environments.staging]
+url = "${STAGING_DATABASE_URL}"
+user = "${STAGING_DATABASE_USER}"
+password = "${STAGING_DATABASE_PASSWORD}"
+schemas = ["dbo"]
+
+[environments.production]
+url = "${PRODUCTION_DATABASE_URL}"
+user = "${PRODUCTION_DATABASE_USER}"
+password = "${PRODUCTION_DATABASE_PASSWORD}"
+schemas = ["dbo"]
+
+[environments.build]
+url = "${BUILD_DATABASE_URL}"
+user = "${BUILD_DATABASE_USER}"
+password = "${BUILD_DATABASE_PASSWORD}"
+schemas = ["dbo"]

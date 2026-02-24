@@ -1,0 +1,18 @@
+# Flyway
+report.html
+report.json
+*.flywayenv
+
+# Flyway Desktop
+.flywayoperator/
+schemaModel/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

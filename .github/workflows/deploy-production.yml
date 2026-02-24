@@ -1,0 +1,110 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration-version:
+        description: 'Migrate up to this version (leave empty for latest)'
+        required: false
+        type: string
+      cherry-pick:
+        description: 'Comma-separated migration versions to cherry-pick'
+        required: false
+        type: string
+      skip-drift-check:
+        description: 'Skip drift detection'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  checks:
+    name: Pre-deployment checks
+    runs-on: ubuntu-latest
+    environment: production-read-only
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flyway
+        uses: red-gate/setup-flyway@v3
+        with:
+          edition: enterprise
+          i-agree-to-the-eula: true
+          email: ${{ secrets.FLYWAY_EMAIL }}
+          token: ${{ secrets.FLYWAY_TOKEN }}
+
+      - name: Run pre-deployment checks
+        id: checks
+        uses: red-gate/flyway-actions/migrations/checks@v1
+        with:
+          target-environment: production
+          target-user: ${{ secrets.PRODUCTION_DATABASE_USER }}
+          target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
+          target-migration-version: ${{ inputs.migration-version }}
+          cherry-pick: ${{ inputs.cherry-pick }}
+          build-environment: build
+          build-user: ${{ secrets.BUILD_DATABASE_USER }}
+          build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+          build-ok-to-erase: true
+          # Enterprise checks - all enabled (drift overridable via input)
+          skip-code-review: false
+          skip-drift-check: ${{ inputs.skip-drift-check }}
+          skip-deployment-changes-report: false
+          skip-deployment-script-review: false
+          fail-on-code-review: true
+          fail-on-drift: true
+          # Report artifact
+          pre-deployment-report-name: flyway-production-report
+          pre-deployment-report-retention-days: 30
+
+      - name: Check results summary
+        if: always()
+        run: |
+          echo "### Production Pre-Deployment Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Drift detected | \`${{ steps.checks.outputs.drift-detected }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Changed objects | \`${{ steps.checks.outputs.changed-object-count }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code violations | \`${{ steps.checks.outputs.code-violation-count }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Violation codes | \`${{ steps.checks.outputs.code-violation-codes }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  deploy:
+    name: Deploy migrations to production
+    needs: checks
+    runs-on: ubuntu-latest
+    environment: production  # Requires manual approval via GitHub environment protection rules
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flyway
+        uses: red-gate/setup-flyway@v3
+        with:
+          edition: enterprise
+          i-agree-to-the-eula: true
+          email: ${{ secrets.FLYWAY_EMAIL }}
+          token: ${{ secrets.FLYWAY_TOKEN }}
+
+      - name: Deploy migrations
+        id: deploy
+        uses: red-gate/flyway-actions/migrations/deploy@v1
+        with:
+          target-environment: production
+          target-user: ${{ secrets.PRODUCTION_DATABASE_USER }}
+          target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
+          target-migration-version: ${{ inputs.migration-version }}
+          cherry-pick: ${{ inputs.cherry-pick }}
+          skip-drift-check: ${{ inputs.skip-drift-check }}
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "### Production Deployment Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Drift detected | \`${{ steps.deploy.outputs.drift-detected }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Migrations applied | \`${{ steps.deploy.outputs.migrations-applied }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Schema version | \`${{ steps.deploy.outputs.schema-version }}\` |" >> $GITHUB_STEP_SUMMARY
