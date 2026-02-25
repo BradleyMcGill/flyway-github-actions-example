@@ -9,11 +9,67 @@ on:
 
 jobs:
   checks:
-    uses: ./.github/workflows/zzz-checks.yml
-    with:
-      target-environment: staging
-      database-name: FlywaySample_Staging
-      environment: ci
-    secrets:
-      FLYWAY_EMAIL: ${{ secrets.FLYWAY_EMAIL }}
-      FLYWAY_TOKEN: ${{ secrets.FLYWAY_TOKEN }}
+    name: Pre-deployment checks
+    runs-on: ubuntu-latest
+    environment: ci
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Flyway123!"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Flyway123!' -C -Q 'SELECT 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 10s
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup demo environment
+        uses: ./.github/actions/setup-demo
+        with:
+          sqlserver-container-id: ${{ job.services.sqlserver.id }}
+          database-name: FlywaySample_Staging
+          create-build-db: "true"
+          flyway-email: ${{ secrets.FLYWAY_EMAIL }}
+          flyway-token: ${{ secrets.FLYWAY_TOKEN }}
+
+      - name: Run pre-deployment checks
+        uses: red-gate/flyway-actions/migrations/checks@v1
+        with:
+          target-environment: staging
+          target-url: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Staging;encrypt=true;trustServerCertificate=true"
+          target-user: sa
+          target-password: "Flyway123!"
+          build-environment: build
+          build-url: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Build;encrypt=true;trustServerCertificate=true"
+          build-user: sa
+          build-password: "Flyway123!"
+          build-ok-to-erase: true
+          skip-code-review: false
+          skip-drift-check: false
+          skip-deployment-changes-report: false
+          skip-deployment-script-review: false
+          fail-on-code-review: true
+          fail-on-drift: true
+
+      - name: Upload pre-deployment report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flyway-staging-report
+          path: report.html
+          if-no-files-found: ignore
+
+      - name: Upload drift resolution scripts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flyway-staging-drift-resolution
+          path: drift-resolution/
+          if-no-files-found: ignore
