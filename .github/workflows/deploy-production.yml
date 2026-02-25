@@ -41,7 +41,7 @@ jobs:
       BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup demo environment
         uses: ./.github/actions/setup-demo
@@ -61,22 +61,6 @@ jobs:
           build-environment: build
           build-ok-to-erase: true
           skip-drift-check: ${{ inputs.skip-drift-check }}
-
-      - name: Upload pre-deployment report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: flyway-production-report
-          path: report.html
-          if-no-files-found: ignore
-
-      - name: Upload drift resolution scripts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: flyway-production-drift-resolution
-          path: drift-resolution/
-          if-no-files-found: ignore
 
   deploy:
     name: Deploy migrations
@@ -101,7 +85,7 @@ jobs:
       PRODUCTION_DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup demo environment
         uses: ./.github/actions/setup-demo
