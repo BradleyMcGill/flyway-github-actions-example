@@ -57,9 +57,6 @@ runs:
       run: |
         flyway migrate \
           -environment=${{ inputs.target-environment }} \
-          -url="jdbc:sqlserver://localhost:1433;databaseName=${{ inputs.database-name }};encrypt=true;trustServerCertificate=true" \
-          -user=sa \
-          -password="Flyway123!" \
           -target=003
 
     - name: Save deployment snapshot (baseline for drift comparison)
@@ -68,9 +65,7 @@ runs:
       run: |
         flyway snapshot \
           -filename=deployed-snapshot.json \
-          -url="jdbc:sqlserver://localhost:1433;databaseName=${{ inputs.database-name }};encrypt=true;trustServerCertificate=true" \
-          -user=sa \
-          -password="Flyway123!"
+          -environment=${{ inputs.target-environment }}
 
     - name: Introduce out-of-band change (simulate drift)
       if: inputs.seed-drift == 'true'

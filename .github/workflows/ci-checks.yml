@@ -26,6 +26,13 @@ jobs:
           --health-timeout 5s
           --health-retries 10
           --health-start-period 10s
+    env:
+      STAGING_DATABASE_URL: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Staging;encrypt=true;trustServerCertificate=true"
+      STAGING_DATABASE_USER: sa
+      STAGING_DATABASE_PASSWORD: "Flyway123!"
+      BUILD_DATABASE_URL: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Build;encrypt=true;trustServerCertificate=true"
+      BUILD_DATABASE_USER: sa
+      BUILD_DATABASE_PASSWORD: "Flyway123!"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,13 +50,7 @@ jobs:
         uses: red-gate/flyway-actions/migrations/checks@v1
         with:
           target-environment: staging
-          target-url: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Staging;encrypt=true;trustServerCertificate=true"
-          target-user: sa
-          target-password: "Flyway123!"
           build-environment: build
-          build-url: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Build;encrypt=true;trustServerCertificate=true"
-          build-user: sa
-          build-password: "Flyway123!"
           build-ok-to-erase: true
           skip-code-review: false
           skip-drift-check: false
