@@ -1,0 +1,81 @@
+name: Setup Demo Environment
+description: Creates databases, installs Flyway, and optionally seeds drift for demo workflows
+
+inputs:
+  sqlserver-container-id:
+    description: "SQL Server container ID (from job.services.sqlserver.id)"
+    required: true
+  database-name:
+    description: "Target database name to create"
+    required: true
+  create-build-db:
+    description: "Also create the FlywaySample_Build database"
+    required: false
+    default: "false"
+  flyway-email:
+    description: "Flyway Enterprise license email"
+    required: true
+  flyway-token:
+    description: "Flyway Enterprise license token"
+    required: true
+  seed-drift:
+    description: "Seed the target DB to v003, snapshot it, then introduce an out-of-band change"
+    required: false
+    default: "false"
+  target-environment:
+    description: "Flyway environment name (used during seed migration)"
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Create target database
+      shell: bash
+      run: |
+        docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
+          -S localhost -U sa -P 'Flyway123!' -C -Q "CREATE DATABASE [${{ inputs.database-name }}]"
+
+    - name: Create build database
+      if: inputs.create-build-db == 'true'
+      shell: bash
+      run: |
+        docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
+          -S localhost -U sa -P 'Flyway123!' -C -Q "CREATE DATABASE [FlywaySample_Build]"
+
+    - name: Install Flyway Enterprise
+      uses: red-gate/setup-flyway@v3
+      with:
+        edition: enterprise
+        i-agree-to-the-eula: true
+        email: ${{ inputs.flyway-email }}
+        token: ${{ inputs.flyway-token }}
+
+    - name: Seed target database (simulate prior deployments)
+      if: inputs.seed-drift == 'true'
+      shell: bash
+      run: |
+        flyway migrate \
+          -environment=${{ inputs.target-environment }} \
+          -url="jdbc:sqlserver://localhost:1433;databaseName=${{ inputs.database-name }};encrypt=true;trustServerCertificate=true" \
+          -user=sa \
+          -password="Flyway123!" \
+          -target=003
+
+    - name: Save deployment snapshot (baseline for drift comparison)
+      if: inputs.seed-drift == 'true'
+      shell: bash
+      run: |
+        flyway snapshot \
+          -filename=deployed-snapshot.json \
+          -url="jdbc:sqlserver://localhost:1433;databaseName=${{ inputs.database-name }};encrypt=true;trustServerCertificate=true" \
+          -user=sa \
+          -password="Flyway123!"
+
+    - name: Introduce out-of-band change (simulate drift)
+      if: inputs.seed-drift == 'true'
+      shell: bash
+      run: |
+        docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
+          -S localhost -U sa -P 'Flyway123!' -C -Q \
+          "USE [${{ inputs.database-name }}]; ALTER TABLE users ADD phone_number NVARCHAR(50) NULL;"
