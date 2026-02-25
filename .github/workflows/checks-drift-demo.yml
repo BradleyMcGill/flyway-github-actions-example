@@ -22,8 +22,6 @@ jobs:
           --health-timeout 5s
           --health-retries 10
           --health-start-period 10s
-    env:
-      STAGING_DATABASE_PASSWORD: ${{ secrets.STAGING_DATABASE_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -38,6 +36,7 @@ jobs:
           flyway-token: ${{ secrets.FLYWAY_TOKEN }}
           seed-drift: "true"
           target-environment: staging
+          target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
 
       - name: Run pre-deployment checks
         uses: red-gate/flyway-actions/migrations/checks@v1

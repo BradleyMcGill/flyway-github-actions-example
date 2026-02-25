@@ -26,6 +26,10 @@ inputs:
     description: "Flyway environment name (used during seed migration)"
     required: false
     default: ""
+  target-password:
+    description: "Database password for the target environment (used during seed migration)"
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -57,6 +61,7 @@ runs:
       run: |
         flyway migrate \
           -environment=${{ inputs.target-environment }} \
+          -environments.${{ inputs.target-environment }}.password="${{ inputs.target-password }}" \
           -target=003
 
     - name: Save deployment snapshot (baseline for drift comparison)
@@ -65,7 +70,8 @@ runs:
       run: |
         flyway snapshot \
           -filename=deployed-snapshot.json \
-          -environment=${{ inputs.target-environment }}
+          -environment=${{ inputs.target-environment }} \
+          -environments.${{ inputs.target-environment }}.password="${{ inputs.target-password }}"
 
     - name: Introduce out-of-band change (simulate drift)
       if: inputs.seed-drift == 'true'
