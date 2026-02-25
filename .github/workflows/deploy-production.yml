@@ -48,8 +48,6 @@ jobs:
           create-build-db: "true"
           flyway-email: ${{ secrets.FLYWAY_EMAIL }}
           flyway-token: ${{ secrets.FLYWAY_TOKEN }}
-          seed-drift: "true"
-          target-environment: production
 
       - name: Run pre-deployment checks
         uses: red-gate/flyway-actions/migrations/checks@v1
@@ -71,7 +69,6 @@ jobs:
           skip-deployment-script-review: false
           fail-on-code-review: true
           fail-on-drift: true
-          extra-args: -check.deployedSnapshot=deployed-snapshot.json
 
       - name: Upload pre-deployment report
         if: always()
