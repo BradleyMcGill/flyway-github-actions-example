@@ -37,12 +37,8 @@ jobs:
           --health-retries 10
           --health-start-period 10s
     env:
-      PRODUCTION_DATABASE_URL: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Prod;encrypt=true;trustServerCertificate=true"
-      PRODUCTION_DATABASE_USER: sa
-      PRODUCTION_DATABASE_PASSWORD: "Flyway123!"
-      BUILD_DATABASE_URL: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Build;encrypt=true;trustServerCertificate=true"
-      BUILD_DATABASE_USER: sa
-      BUILD_DATABASE_PASSWORD: "Flyway123!"
+      PRODUCTION_DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
+      BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -102,9 +98,7 @@ jobs:
           --health-retries 10
           --health-start-period 10s
     env:
-      PRODUCTION_DATABASE_URL: "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Prod;encrypt=true;trustServerCertificate=true"
-      PRODUCTION_DATABASE_USER: sa
-      PRODUCTION_DATABASE_PASSWORD: "Flyway123!"
+      PRODUCTION_DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
