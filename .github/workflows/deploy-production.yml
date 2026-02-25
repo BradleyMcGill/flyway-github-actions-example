@@ -36,9 +36,6 @@ jobs:
           --health-timeout 5s
           --health-retries 10
           --health-start-period 10s
-    env:
-      PRODUCTION_DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
-      BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -56,9 +53,11 @@ jobs:
         uses: red-gate/flyway-actions/migrations/checks@v1
         with:
           target-environment: production
+          target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
           target-migration-version: ${{ inputs.migration-version }}
           cherry-pick: ${{ inputs.cherry-pick }}
           build-environment: build
+          build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
           build-ok-to-erase: true
           skip-drift-check: ${{ inputs.skip-drift-check }}
 
@@ -81,8 +80,6 @@ jobs:
           --health-timeout 5s
           --health-retries 10
           --health-start-period 10s
-    env:
-      PRODUCTION_DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -100,6 +97,7 @@ jobs:
         uses: red-gate/flyway-actions/migrations/deploy@v1
         with:
           target-environment: production
+          target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
           target-migration-version: ${{ inputs.migration-version }}
           cherry-pick: ${{ inputs.cherry-pick }}
           skip-drift-check: ${{ inputs.skip-drift-check }}
