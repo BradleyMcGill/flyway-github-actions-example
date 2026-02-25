@@ -48,12 +48,6 @@ jobs:
           target-environment: staging
           build-environment: build
           build-ok-to-erase: true
-          skip-code-review: false
-          skip-drift-check: false
-          skip-deployment-changes-report: false
-          skip-deployment-script-review: false
-          fail-on-code-review: true
-          fail-on-drift: true
 
       - name: Upload pre-deployment report
         if: always()
