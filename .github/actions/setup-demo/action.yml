@@ -19,15 +19,15 @@ inputs:
     description: "Flyway Enterprise license token"
     required: true
   seed-drift:
-    description: "Seed the target DB to v003, snapshot it, then introduce an out-of-band change"
+    description: "Seed the target DB to v003 then introduce an out-of-band change"
     required: false
     default: "false"
   target-environment:
-    description: "Flyway environment name (used during seed migration)"
+    description: "Flyway environment name (from flyway.toml)"
     required: false
     default: ""
   target-password:
-    description: "Database password for the target environment (used during seed migration)"
+    description: "Database password for the target environment"
     required: false
     default: ""
 
@@ -57,21 +57,12 @@ runs:
 
     - name: Seed target database (simulate prior deployments)
       if: inputs.seed-drift == 'true'
-      shell: bash
-      run: |
-        flyway migrate \
-          -environment=${{ inputs.target-environment }} \
-          -environments.${{ inputs.target-environment }}.password="${{ inputs.target-password }}" \
-          -target=003
-
-    - name: Save deployment snapshot (baseline for drift comparison)
-      if: inputs.seed-drift == 'true'
-      shell: bash
-      run: |
-        flyway snapshot \
-          -filename=deployed-snapshot.json \
-          -environment=${{ inputs.target-environment }} \
-          -environments.${{ inputs.target-environment }}.password="${{ inputs.target-password }}"
+      uses: red-gate/flyway-actions/migrations/deploy@v1
+      with:
+        target-environment: ${{ inputs.target-environment }}
+        target-password: ${{ inputs.target-password }}
+        target-migration-version: "003"
+        skip-drift-check: true
 
     - name: Introduce out-of-band change (simulate drift)
       if: inputs.seed-drift == 'true'

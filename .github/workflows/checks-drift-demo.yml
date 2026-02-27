@@ -46,7 +46,6 @@ jobs:
           build-environment: build
           build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
           build-ok-to-erase: true
-          extra-args: -check.deployedSnapshot=deployed-snapshot.json
 
       - name: Upload drift resolution scripts
         if: always()
