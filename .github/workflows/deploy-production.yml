@@ -63,6 +63,14 @@ jobs:
           skip-drift-check: ${{ inputs.skip-drift-check }}
           working-directory: flyway
 
+      - name: Upload drift resolution scripts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flyway-drift-resolution-scripts
+          path: drift-resolution/
+          if-no-files-found: ignore
+
   deploy:
     name: Deploy migrations
     needs: checks
@@ -96,7 +104,6 @@ jobs:
           working-directory: flyway
 
       - name: Deploy migrations
-        id: deploy
         uses: red-gate/flyway-actions/migrations/deploy@v1
         with:
           target-environment: production
@@ -105,14 +112,3 @@ jobs:
           cherry-pick: ${{ inputs.cherry-pick }}
           skip-drift-check: ${{ inputs.skip-drift-check }}
           working-directory: flyway
-
-      - name: Deployment summary
-        if: always()
-        run: |
-          echo "### Production Deployment Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| Drift detected | \`${{ steps.deploy.outputs.drift-detected }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Migrations applied | \`${{ steps.deploy.outputs.migrations-applied }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Schema version | \`${{ steps.deploy.outputs.schema-version }}\` |" >> $GITHUB_STEP_SUMMARY

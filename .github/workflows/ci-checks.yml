@@ -5,6 +5,13 @@ on:
     branches: [main]
     paths:
       - 'flyway/**'
+  workflow_dispatch:
+    inputs:
+      seed-drift:
+        description: 'Seed drift to demo drift detection'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   checks:
@@ -37,6 +44,9 @@ jobs:
           create-build-db: "true"
           flyway-email: ${{ secrets.FLYWAY_EMAIL }}
           flyway-token: ${{ secrets.FLYWAY_TOKEN }}
+          seed-drift: ${{ inputs.seed-drift == true && 'true' || 'false' }}
+          target-environment: staging
+          target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
           working-directory: flyway
 
       - name: Run pre-deployment checks
@@ -48,3 +58,11 @@ jobs:
           build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
           build-ok-to-erase: true
           working-directory: flyway
+
+      - name: Upload drift resolution scripts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flyway-drift-resolution-scripts
+          path: drift-resolution/
+          if-no-files-found: ignore
