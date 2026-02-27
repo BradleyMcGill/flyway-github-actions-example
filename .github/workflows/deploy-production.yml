@@ -48,6 +48,7 @@ jobs:
           create-build-db: "true"
           flyway-email: ${{ secrets.FLYWAY_EMAIL }}
           flyway-token: ${{ secrets.FLYWAY_TOKEN }}
+          working-directory: flyway
 
       - name: Run pre-deployment checks
         uses: red-gate/flyway-actions/migrations/checks@v1
@@ -60,6 +61,7 @@ jobs:
           build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
           build-ok-to-erase: true
           skip-drift-check: ${{ inputs.skip-drift-check }}
+          working-directory: flyway
 
   deploy:
     name: Deploy migrations
@@ -91,6 +93,7 @@ jobs:
           database-name: FlywaySample_Prod
           flyway-email: ${{ secrets.FLYWAY_EMAIL }}
           flyway-token: ${{ secrets.FLYWAY_TOKEN }}
+          working-directory: flyway
 
       - name: Deploy migrations
         id: deploy
@@ -101,6 +104,7 @@ jobs:
           target-migration-version: ${{ inputs.migration-version }}
           cherry-pick: ${{ inputs.cherry-pick }}
           skip-drift-check: ${{ inputs.skip-drift-check }}
+          working-directory: flyway
 
       - name: Deployment summary
         if: always()

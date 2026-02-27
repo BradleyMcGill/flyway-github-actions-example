@@ -30,6 +30,10 @@ inputs:
     description: "Database password for the target environment"
     required: false
     default: ""
+  working-directory:
+    description: "Path to the Flyway project directory"
+    required: false
+    default: "."
 
 runs:
   using: composite
@@ -63,6 +67,7 @@ runs:
         target-password: ${{ inputs.target-password }}
         target-migration-version: "003"
         skip-drift-check: true
+        working-directory: ${{ inputs.working-directory }}
 
     - name: Introduce out-of-band change (simulate drift)
       if: inputs.seed-drift == 'true'

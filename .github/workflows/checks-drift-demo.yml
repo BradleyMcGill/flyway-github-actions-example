@@ -37,6 +37,7 @@ jobs:
           seed-drift: "true"
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
+          working-directory: flyway
 
       - name: Run pre-deployment checks
         uses: red-gate/flyway-actions/migrations/checks@v1
@@ -46,6 +47,7 @@ jobs:
           build-environment: build
           build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
           build-ok-to-erase: true
+          working-directory: flyway
 
       - name: Upload drift resolution scripts
         if: always()
