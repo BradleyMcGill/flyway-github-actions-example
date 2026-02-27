@@ -18,20 +18,16 @@ jobs:
     name: Pre-deployment checks
     runs-on: ubuntu-latest
     environment: ci
+    env:
+      BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
     services:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
           ACCEPT_EULA: "Y"
-          MSSQL_SA_PASSWORD: "Flyway123!"
+          MSSQL_SA_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
         ports:
           - 1433:1433
-        options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Flyway123!' -C -Q 'SELECT 1' || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 10s
     steps:
       - name: Checkout
         uses: actions/checkout@v6

@@ -27,7 +27,7 @@ inputs:
     required: false
     default: ""
   target-password:
-    description: "Database password for the target environment"
+    description: "Password for the target environment database"
     required: false
     default: ""
   working-directory:
@@ -38,18 +38,28 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Wait for SQL Server
+      shell: bash
+      run: |
+        for i in {1..30}; do
+          docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "SELECT 1" > /dev/null 2>&1 && break
+          echo "Waiting for SQL Server... ($i/30)"
+          sleep 2
+        done
+
     - name: Create target database
       shell: bash
       run: |
         docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
-          -S localhost -U sa -P 'Flyway123!' -C -Q "CREATE DATABASE [${{ inputs.database-name }}]"
+          -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "CREATE DATABASE [${{ inputs.database-name }}]"
 
     - name: Create build database
       if: inputs.create-build-db == 'true'
       shell: bash
       run: |
         docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
-          -S localhost -U sa -P 'Flyway123!' -C -Q "CREATE DATABASE [FlywaySample_Build]"
+          -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "CREATE DATABASE [FlywaySample_Build]"
 
     - name: Install Flyway Enterprise
       uses: red-gate/setup-flyway@v3
@@ -74,5 +84,5 @@ runs:
       shell: bash
       run: |
         docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
-          -S localhost -U sa -P 'Flyway123!' -C -Q \
+          -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q \
           "USE [${{ inputs.database-name }}]; ALTER TABLE users ADD phone_number NVARCHAR(50) NULL;"
