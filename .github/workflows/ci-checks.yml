@@ -58,11 +58,3 @@ jobs:
           build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
           build-ok-to-erase: true
           working-directory: flyway
-
-      - name: Upload drift resolution scripts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: flyway-drift-resolution-scripts
-          path: drift-resolution/
-          if-no-files-found: ignore

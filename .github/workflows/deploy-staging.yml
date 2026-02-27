@@ -46,14 +46,6 @@ jobs:
           build-ok-to-erase: true
           working-directory: flyway
 
-      - name: Upload drift resolution scripts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: flyway-drift-resolution-scripts
-          path: drift-resolution/
-          if-no-files-found: ignore
-
       - name: Deploy migrations
         uses: red-gate/flyway-actions/migrations/deploy@v1
         with:

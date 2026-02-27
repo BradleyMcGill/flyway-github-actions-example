@@ -63,14 +63,6 @@ jobs:
           skip-drift-check: ${{ inputs.skip-drift-check }}
           working-directory: flyway
 
-      - name: Upload drift resolution scripts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: flyway-drift-resolution-scripts
-          path: drift-resolution/
-          if-no-files-found: ignore
-
   deploy:
     name: Deploy migrations
     needs: checks
