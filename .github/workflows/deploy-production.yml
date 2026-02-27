@@ -50,7 +50,7 @@ jobs:
           flyway-token: ${{ secrets.FLYWAY_TOKEN }}
 
       - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v1
+        uses: red-gate/flyway-actions/migrations/checks@push-uncompressed-artifacts
         with:
           target-environment: production
           target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
@@ -94,7 +94,7 @@ jobs:
 
       - name: Deploy migrations
         id: deploy
-        uses: red-gate/flyway-actions/migrations/deploy@v1
+        uses: red-gate/flyway-actions/migrations/deploy@push-uncompressed-artifacts
         with:
           target-environment: production
           target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}

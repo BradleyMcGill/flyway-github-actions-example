@@ -39,7 +39,7 @@ jobs:
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
 
       - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v1
+        uses: red-gate/flyway-actions/migrations/checks@push-uncompressed-artifacts
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
