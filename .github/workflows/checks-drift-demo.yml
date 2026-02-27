@@ -39,7 +39,7 @@ jobs:
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
 
       - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v1
+        uses: red-gate/flyway-actions/migrations/checks@push-uncompressed-artifacts
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
@@ -47,11 +47,3 @@ jobs:
           build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
           build-ok-to-erase: true
           extra-args: -check.deployedSnapshot=deployed-snapshot.json
-
-      - name: Upload drift resolution scripts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: flyway-drift-resolution-scripts
-          path: drift-resolution/
-          if-no-files-found: ignore
