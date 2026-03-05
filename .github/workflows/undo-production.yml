@@ -1,0 +1,53 @@
+name: Undo Production Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration-version:
+        description: 'Undo down to this version (leave empty to undo last migration only)'
+        required: false
+        type: string
+
+jobs:
+  undo:
+    name: Undo migration
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+        ports:
+          - 1433:1433
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup demo environment
+        uses: ./.github/actions/setup-demo
+        with:
+          sqlserver-container-id: ${{ job.services.sqlserver.id }}
+          database-name: FlywaySample_Prod
+          flyway-email: ${{ secrets.FLYWAY_EMAIL }}
+          flyway-token: ${{ secrets.FLYWAY_TOKEN }}
+          working-directory: flyway
+
+      - name: Deploy migrations (seed database)
+        uses: red-gate/flyway-actions/migrations/deploy@v1
+        with:
+          target-environment: production
+          target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
+          skip-drift-check: true
+          working-directory: flyway
+
+      - name: Undo migration
+        uses: red-gate/flyway-actions/migrations/undo@v1
+        with:
+          target-environment: production
+          target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
+          target-migration-version: ${{ inputs.migration-version }}
+          working-directory: flyway
