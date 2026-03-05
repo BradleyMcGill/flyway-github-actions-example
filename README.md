@@ -12,6 +12,8 @@ Three sample SQL Server migrations:
 - `V002__create_orders_table.sql` - Creates an orders table
 - `V003__add_user_email_index.sql` - Adds an index on user email
 
+Each versioned migration has a corresponding undo migration (`U001`, `U002`, `U003`) that reverses the change.
+
 ### Workflows
 
 | Workflow | Trigger | What it does |
@@ -19,6 +21,7 @@ Three sample SQL Server migrations:
 | **CI - Migration Checks** | PR to `main`, manual | Runs pre-deployment checks against staging. Optionally seeds drift for demo. |
 | **Deploy to Staging** | Manual | Runs checks then deploys migrations to staging. |
 | **Deploy to Production** | Manual | Runs checks (with approval gate), then deploys to production (with separate approval gate). |
+| **Undo Production Migration** | Manual | Undoes the last migration (or down to a specified version) on production. |
 
 ### Pre-deployment Checks
 
@@ -80,4 +83,5 @@ flyway/
     ci-checks.yml           # PR checks + drift demo
     deploy-staging.yml      # Staging deployment
     deploy-production.yml   # Production deployment with approval gates
+    undo-production.yml     # Production migration undo
 ```
