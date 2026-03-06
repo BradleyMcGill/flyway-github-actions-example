@@ -27,23 +27,19 @@ jobs:
         with:
           sqlserver-container-id: ${{ job.services.sqlserver.id }}
           database-name: FlywaySample_Staging
-          create-build-db: "true"
           flyway-email: ${{ secrets.FLYWAY_EMAIL }}
           flyway-token: ${{ secrets.FLYWAY_TOKEN }}
           working-directory: flyway
 
       - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v1
+        uses: red-gate/flyway-actions/migrations/checks@test-containers-experiment
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
-          build-environment: build
-          build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
-          build-ok-to-erase: true
           working-directory: flyway
 
       - name: Deploy migrations
-        uses: red-gate/flyway-actions/migrations/deploy@v1
+        uses: red-gate/flyway-actions/migrations/deploy@test-containers-experiment
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}

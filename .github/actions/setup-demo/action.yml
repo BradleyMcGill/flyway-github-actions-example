@@ -8,10 +8,6 @@ inputs:
   database-name:
     description: "Target database name to create"
     required: true
-  create-build-db:
-    description: "Also create the FlywaySample_Build database"
-    required: false
-    default: "false"
   flyway-email:
     description: "Flyway Enterprise license email"
     required: true
@@ -54,13 +50,6 @@ runs:
         docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
           -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "CREATE DATABASE [${{ inputs.database-name }}]"
 
-    - name: Create build database
-      if: inputs.create-build-db == 'true'
-      shell: bash
-      run: |
-        docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
-          -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "CREATE DATABASE [FlywaySample_Build]"
-
     - name: Install Flyway Enterprise
       uses: red-gate/setup-flyway@v3
       with:
@@ -71,7 +60,7 @@ runs:
 
     - name: Seed target database (simulate prior deployments)
       if: inputs.seed-drift == 'true'
-      uses: red-gate/flyway-actions/migrations/deploy@v1
+      uses: red-gate/flyway-actions/migrations/deploy@test-containers-experiment
       with:
         target-environment: ${{ inputs.target-environment }}
         target-password: ${{ inputs.target-password }}
