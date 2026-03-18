@@ -71,7 +71,7 @@ runs:
 
     - name: Seed target database (simulate prior deployments)
       if: inputs.seed-drift == 'true'
-      uses: red-gate/flyway-actions/migrations/deploy@v1
+      uses: red-gate/flyway-actions/migrations/deploy@write-to-summary
       with:
         target-environment: ${{ inputs.target-environment }}
         target-password: ${{ inputs.target-password }}
