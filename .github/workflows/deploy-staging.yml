@@ -33,7 +33,7 @@ jobs:
           working-directory: flyway
 
       - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v1
+        uses: red-gate/flyway-actions/migrations/checks@write-to-summary
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
@@ -43,7 +43,7 @@ jobs:
           working-directory: flyway
 
       - name: Deploy migrations
-        uses: red-gate/flyway-actions/migrations/deploy@v1
+        uses: red-gate/flyway-actions/migrations/deploy@write-to-summary
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
