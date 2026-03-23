@@ -1,0 +1,88 @@
+name: "State: Deploy to Production"
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip-drift-check:
+        description: 'Skip drift detection'
+        required: false
+        type: boolean
+        default: false
+      generate-undo:
+        description: 'Generate undo script alongside deploy script'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  prepare:
+    name: Prepare deployment script
+    runs-on: ubuntu-latest
+    environment: production-read-only
+    env:
+      BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+        ports:
+          - 1433:1433
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup demo environment
+        uses: ./.github/actions/setup-state-demo
+        with:
+          sqlserver-container-id: ${{ job.services.sqlserver.id }}
+          database-name: FlywaySample_State_Prod
+          flyway-email: ${{ secrets.FLYWAY_EMAIL }}
+          flyway-token: ${{ secrets.FLYWAY_TOKEN }}
+          working-directory: flyway-state
+
+      - name: Prepare deployment script
+        uses: red-gate/flyway-actions/state/prepare@v2
+        with:
+          target-environment: production
+          target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
+          skip-drift-check: ${{ inputs.skip-drift-check }}
+          generate-undo: ${{ inputs.generate-undo }}
+          working-directory: flyway-state
+
+  deploy:
+    name: Deploy changes
+    needs: prepare
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+        ports:
+          - 1433:1433
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup demo environment
+        uses: ./.github/actions/setup-state-demo
+        with:
+          sqlserver-container-id: ${{ job.services.sqlserver.id }}
+          database-name: FlywaySample_State_Prod
+          flyway-email: ${{ secrets.FLYWAY_EMAIL }}
+          flyway-token: ${{ secrets.FLYWAY_TOKEN }}
+          working-directory: flyway-state
+
+      - name: Deploy changes
+        uses: red-gate/flyway-actions/state/deploy@v2
+        with:
+          target-environment: production
+          target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
+          skip-drift-check: ${{ inputs.skip-drift-check }}
+          working-directory: flyway-state

@@ -1,0 +1,61 @@
+name: "State: Deploy to Staging"
+
+on:
+  workflow_dispatch:
+    inputs:
+      seed-drift:
+        description: 'Seed drift to demo drift detection'
+        required: false
+        type: boolean
+        default: false
+      generate-undo:
+        description: 'Generate undo script alongside deploy script'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  deploy:
+    name: Prepare and deploy to staging
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+        ports:
+          - 1433:1433
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup demo environment
+        uses: ./.github/actions/setup-state-demo
+        with:
+          sqlserver-container-id: ${{ job.services.sqlserver.id }}
+          database-name: FlywaySample_State_Staging
+          flyway-email: ${{ secrets.FLYWAY_EMAIL }}
+          flyway-token: ${{ secrets.FLYWAY_TOKEN }}
+          seed-drift: ${{ inputs.seed-drift == true && 'true' || 'false' }}
+          target-environment: staging
+          target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
+          working-directory: flyway-state
+
+      - name: Prepare deployment script
+        uses: red-gate/flyway-actions/state/prepare@v2
+        with:
+          target-environment: staging
+          target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
+          generate-undo: ${{ inputs.generate-undo }}
+          working-directory: flyway-state
+
+      - name: Deploy changes
+        uses: red-gate/flyway-actions/state/deploy@v2
+        with:
+          target-environment: staging
+          target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
+          working-directory: flyway-state

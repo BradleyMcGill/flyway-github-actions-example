@@ -1,0 +1,76 @@
+name: Setup State Demo Environment
+description: Creates target database, installs Flyway, and optionally seeds drift for state-based demo workflows
+
+inputs:
+  sqlserver-container-id:
+    description: "SQL Server container ID (from job.services.sqlserver.id)"
+    required: true
+  database-name:
+    description: "Target database name to create"
+    required: true
+  flyway-email:
+    description: "Flyway Enterprise license email"
+    required: true
+  flyway-token:
+    description: "Flyway Enterprise license token"
+    required: true
+  seed-drift:
+    description: "Deploy the schema model then introduce an out-of-band change to simulate drift"
+    required: false
+    default: "false"
+  target-environment:
+    description: "Flyway environment name (from flyway.toml)"
+    required: false
+    default: ""
+  target-password:
+    description: "Password for the target environment database"
+    required: false
+    default: ""
+  working-directory:
+    description: "Path to the Flyway state project directory"
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for SQL Server
+      shell: bash
+      run: |
+        for i in {1..30}; do
+          docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "SELECT 1" > /dev/null 2>&1 && break
+          echo "Waiting for SQL Server... ($i/30)"
+          sleep 2
+        done
+
+    - name: Create target database
+      shell: bash
+      run: |
+        docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
+          -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "CREATE DATABASE [${{ inputs.database-name }}]"
+
+    - name: Install Flyway Enterprise
+      uses: red-gate/setup-flyway@v3
+      with:
+        edition: enterprise
+        i-agree-to-the-eula: true
+        email: ${{ inputs.flyway-email }}
+        token: ${{ inputs.flyway-token }}
+
+    - name: Seed target database with current schema model
+      if: inputs.seed-drift == 'true'
+      uses: red-gate/flyway-actions/state/deploy@v2
+      with:
+        target-environment: ${{ inputs.target-environment }}
+        target-password: ${{ inputs.target-password }}
+        skip-drift-check: true
+        working-directory: ${{ inputs.working-directory }}
+
+    - name: Introduce out-of-band change (simulate drift)
+      if: inputs.seed-drift == 'true'
+      shell: bash
+      run: |
+        docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
+          -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q \
+          "USE [${{ inputs.database-name }}]; ALTER TABLE users ADD phone_number NVARCHAR(50) NULL;"
