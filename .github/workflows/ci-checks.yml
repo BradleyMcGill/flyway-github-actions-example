@@ -46,7 +46,7 @@ jobs:
           working-directory: flyway
 
       - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v1
+        uses: red-gate/flyway-actions/migrations/checks@v2
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
