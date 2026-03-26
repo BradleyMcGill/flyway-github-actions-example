@@ -1,10 +1,6 @@
-name: CI - Migration Checks
+name: "State: Deploy to Staging"
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'flyway/**'
   workflow_dispatch:
     inputs:
       seed-drift:
@@ -12,12 +8,17 @@ on:
         required: false
         type: boolean
         default: false
+      generate-undo:
+        description: 'Generate undo script alongside deploy script'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
-  checks:
-    name: Pre-deployment checks
+  deploy:
+    name: Prepare and deploy to staging
     runs-on: ubuntu-latest
-    environment: ci
+    environment: staging
     env:
       BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
     services:
@@ -33,24 +34,28 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup demo environment
-        uses: ./.github/actions/setup-demo
+        uses: ./.github/actions/setup-state-demo
         with:
           sqlserver-container-id: ${{ job.services.sqlserver.id }}
-          database-name: FlywaySample_Staging
-          create-build-db: "true"
+          database-name: FlywaySample_State_Staging
           flyway-email: ${{ secrets.FLYWAY_EMAIL }}
           flyway-token: ${{ secrets.FLYWAY_TOKEN }}
           seed-drift: ${{ inputs.seed-drift == true && 'true' || 'false' }}
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
-          working-directory: flyway
+          working-directory: flyway-state
 
-      - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v2
+      - name: Prepare deployment script
+        uses: red-gate/flyway-actions/state/prepare@v2
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
-          build-environment: build
-          build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
-          build-ok-to-erase: true
-          working-directory: flyway
+          generate-undo: ${{ inputs.generate-undo }}
+          working-directory: flyway-state
+
+      - name: Deploy changes
+        uses: red-gate/flyway-actions/state/deploy@v2
+        with:
+          target-environment: staging
+          target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
+          working-directory: flyway-state

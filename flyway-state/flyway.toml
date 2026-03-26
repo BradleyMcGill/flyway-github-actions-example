@@ -1,0 +1,20 @@
+[flyway]
+defaultSchema = "dbo"
+
+[environments.staging]
+url = "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_State_Staging;encrypt=true;trustServerCertificate=true"
+user = "sa"
+password = "${STAGING_DATABASE_PASSWORD}"
+schemas = ["dbo"]
+
+[environments.production]
+url = "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_State_Prod;encrypt=true;trustServerCertificate=true"
+user = "sa"
+password = "${PRODUCTION_DATABASE_PASSWORD}"
+schemas = ["dbo"]
+
+[environments.build]
+url = "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_State_Build;encrypt=true;trustServerCertificate=true"
+user = "sa"
+password = "${BUILD_DATABASE_PASSWORD}"
+schemas = ["dbo"]

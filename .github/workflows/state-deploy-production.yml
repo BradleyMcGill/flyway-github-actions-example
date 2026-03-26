@@ -1,25 +1,22 @@
-name: Deploy to Production
+name: "State: Deploy to Production"
 
 on:
   workflow_dispatch:
     inputs:
-      migration-version:
-        description: 'Migrate up to this version (leave empty for latest)'
-        required: false
-        type: string
-      cherry-pick:
-        description: 'Comma-separated migration versions to cherry-pick'
-        required: false
-        type: string
       skip-drift-check:
         description: 'Skip drift detection'
         required: false
         type: boolean
         default: false
+      generate-undo:
+        description: 'Generate undo script alongside deploy script'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
-  checks:
-    name: Pre-deployment checks
+  prepare:
+    name: Prepare deployment script
     runs-on: ubuntu-latest
     environment: production-read-only
     env:
@@ -37,31 +34,26 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup demo environment
-        uses: ./.github/actions/setup-demo
+        uses: ./.github/actions/setup-state-demo
         with:
           sqlserver-container-id: ${{ job.services.sqlserver.id }}
-          database-name: FlywaySample_Prod
-          create-build-db: "true"
+          database-name: FlywaySample_State_Prod
           flyway-email: ${{ secrets.FLYWAY_EMAIL }}
           flyway-token: ${{ secrets.FLYWAY_TOKEN }}
-          working-directory: flyway
+          working-directory: flyway-state
 
-      - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v2
+      - name: Prepare deployment script
+        uses: red-gate/flyway-actions/state/prepare@v2
         with:
           target-environment: production
           target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
-          target-migration-version: ${{ inputs.migration-version }}
-          cherry-pick: ${{ inputs.cherry-pick }}
-          build-environment: build
-          build-password: ${{ secrets.BUILD_DATABASE_PASSWORD }}
-          build-ok-to-erase: true
           skip-drift-check: ${{ inputs.skip-drift-check }}
-          working-directory: flyway
+          generate-undo: ${{ inputs.generate-undo }}
+          working-directory: flyway-state
 
   deploy:
-    name: Deploy migrations
-    needs: checks
+    name: Deploy changes
+    needs: prepare
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -79,20 +71,18 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup demo environment
-        uses: ./.github/actions/setup-demo
+        uses: ./.github/actions/setup-state-demo
         with:
           sqlserver-container-id: ${{ job.services.sqlserver.id }}
-          database-name: FlywaySample_Prod
+          database-name: FlywaySample_State_Prod
           flyway-email: ${{ secrets.FLYWAY_EMAIL }}
           flyway-token: ${{ secrets.FLYWAY_TOKEN }}
-          working-directory: flyway
+          working-directory: flyway-state
 
-      - name: Deploy migrations
-        uses: red-gate/flyway-actions/migrations/deploy@v2
+      - name: Deploy changes
+        uses: red-gate/flyway-actions/state/deploy@v2
         with:
           target-environment: production
           target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
-          target-migration-version: ${{ inputs.migration-version }}
-          cherry-pick: ${{ inputs.cherry-pick }}
           skip-drift-check: ${{ inputs.skip-drift-check }}
-          working-directory: flyway
+          working-directory: flyway-state
