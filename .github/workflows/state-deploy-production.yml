@@ -46,6 +46,8 @@ jobs:
         with:
           sqlserver-container-id: ${{ job.services.sqlserver.id }}
           database-name: FlywaySample_State_Prod
+          target-environment: production
+          target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
           working-directory: flyway-state
 
       - name: Prepare deployment script
@@ -89,6 +91,8 @@ jobs:
         with:
           sqlserver-container-id: ${{ job.services.sqlserver.id }}
           database-name: FlywaySample_State_Prod
+          target-environment: production
+          target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
           working-directory: flyway-state
 
       - name: Deploy changes

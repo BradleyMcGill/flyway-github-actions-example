@@ -45,7 +45,6 @@ runs:
           -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "CREATE DATABASE [${{ inputs.database-name }}]"
 
     - name: Prepare seed deployment script
-      if: inputs.seed-drift == 'true'
       uses: red-gate/flyway-actions/state/prepare@v2
       with:
         target-environment: ${{ inputs.target-environment }}
@@ -58,8 +57,7 @@ runs:
         generate-undo: false
         working-directory: ${{ inputs.working-directory }}
 
-    - name: Seed target database with current schema model
-      if: inputs.seed-drift == 'true'
+    - name: Seed target database (simulate prior deployment)
       uses: red-gate/flyway-actions/state/deploy@v2
       with:
         target-environment: ${{ inputs.target-environment }}
