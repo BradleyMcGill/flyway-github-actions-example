@@ -66,6 +66,10 @@ runs:
         skip-deployment-report-upload: true
         working-directory: ${{ inputs.working-directory }}
 
+    - name: Clean up seed deployment artifacts
+      shell: bash
+      run: rm -rf ${{ inputs.working-directory }}/deployments
+
     - name: Introduce out-of-band change (simulate drift)
       if: inputs.seed-drift == 'true'
       shell: bash
