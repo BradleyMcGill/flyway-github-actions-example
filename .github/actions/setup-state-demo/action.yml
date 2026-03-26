@@ -1,5 +1,5 @@
 name: Setup State Demo Environment
-description: Creates target database and optionally seeds drift for state-based demo workflows
+description: Creates target database and seeds it to simulate a prior deployment
 
 inputs:
   sqlserver-container-id:
@@ -9,7 +9,7 @@ inputs:
     description: "Target database name to create"
     required: true
   seed-drift:
-    description: "Deploy the schema model then introduce an out-of-band change to simulate drift"
+    description: "Deploy the full schema model then introduce an out-of-band change to simulate drift"
     required: false
     default: "false"
   target-environment:
@@ -44,31 +44,37 @@ runs:
         docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
           -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "CREATE DATABASE [${{ inputs.database-name }}]"
 
-    - name: Prepare seed deployment script
-      uses: red-gate/flyway-actions/state/prepare@v2
-      with:
-        target-environment: ${{ inputs.target-environment }}
-        target-password: ${{ inputs.target-password }}
-        skip-drift-check: true
-        skip-code-review: true
-        skip-deployment-changes-report: true
-        skip-deployment-script-upload: true
-        skip-pre-deployment-report-upload: true
-        generate-undo: false
-        working-directory: ${{ inputs.working-directory }}
-
     - name: Seed target database (simulate prior deployment)
-      uses: red-gate/flyway-actions/state/deploy@v2
-      with:
-        target-environment: ${{ inputs.target-environment }}
-        target-password: ${{ inputs.target-password }}
-        skip-drift-check: true
-        skip-deployment-report-upload: true
-        working-directory: ${{ inputs.working-directory }}
-
-    - name: Clean up seed deployment artifacts
       shell: bash
-      run: rm -rf ${{ inputs.working-directory }}/deployments
+      env:
+        TARGET_ENV: ${{ inputs.target-environment }}
+        TARGET_PASSWORD: ${{ inputs.target-password }}
+        WORKING_DIR: ${{ inputs.working-directory }}
+        SEED_DRIFT: ${{ inputs.seed-drift }}
+      run: |
+        # Use seed-schema (partial) for normal runs, full schemaModel for drift runs
+        if [ "$SEED_DRIFT" == "true" ]; then
+          SOURCE="schemaModel"
+        else
+          SOURCE="seed-schema"
+        fi
+
+        flyway prepare \
+          -source="$SOURCE" \
+          -target="$TARGET_ENV" \
+          -environments.${TARGET_ENV}.password="$TARGET_PASSWORD" \
+          -workingDirectory="$WORKING_DIR" \
+          -outputType=json -skipCheckForUpdate
+
+        flyway deploy \
+          -environment="$TARGET_ENV" \
+          -environments.${TARGET_ENV}.password="$TARGET_PASSWORD" \
+          -workingDirectory="$WORKING_DIR" \
+          -deploy.saveSnapshot=true \
+          -outputType=json -skipCheckForUpdate
+
+        # Clean up seed artifacts so the real workflow steps start fresh
+        rm -rf "$WORKING_DIR/deployments"
 
     - name: Introduce out-of-band change (simulate drift)
       if: inputs.seed-drift == 'true'
