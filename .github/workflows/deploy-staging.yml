@@ -22,14 +22,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Install Flyway Enterprise
+        uses: red-gate/setup-flyway@v3
+        with:
+          edition: enterprise
+          i-agree-to-the-eula: true
+          email: ${{ secrets.FLYWAY_EMAIL }}
+          token: ${{ secrets.FLYWAY_TOKEN }}
+
       - name: Setup demo environment
         uses: ./.github/actions/setup-demo
         with:
           sqlserver-container-id: ${{ job.services.sqlserver.id }}
           database-name: FlywaySample_Staging
           create-build-db: "true"
-          flyway-email: ${{ secrets.FLYWAY_EMAIL }}
-          flyway-token: ${{ secrets.FLYWAY_TOKEN }}
           working-directory: flyway
 
       - name: Run pre-deployment checks

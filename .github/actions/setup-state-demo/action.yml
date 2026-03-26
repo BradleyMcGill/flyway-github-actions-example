@@ -1,5 +1,5 @@
 name: Setup State Demo Environment
-description: Creates target database, installs Flyway, and optionally seeds drift for state-based demo workflows
+description: Creates target database and optionally seeds drift for state-based demo workflows
 
 inputs:
   sqlserver-container-id:
@@ -7,12 +7,6 @@ inputs:
     required: true
   database-name:
     description: "Target database name to create"
-    required: true
-  flyway-email:
-    description: "Flyway Enterprise license email"
-    required: true
-  flyway-token:
-    description: "Flyway Enterprise license token"
     required: true
   seed-drift:
     description: "Deploy the schema model then introduce an out-of-band change to simulate drift"
@@ -49,14 +43,6 @@ runs:
       run: |
         docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
           -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "CREATE DATABASE [${{ inputs.database-name }}]"
-
-    - name: Install Flyway Enterprise
-      uses: red-gate/setup-flyway@v3
-      with:
-        edition: enterprise
-        i-agree-to-the-eula: true
-        email: ${{ inputs.flyway-email }}
-        token: ${{ inputs.flyway-token }}
 
     - name: Seed target database with current schema model
       if: inputs.seed-drift == 'true'
