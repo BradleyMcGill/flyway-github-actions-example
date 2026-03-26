@@ -52,15 +52,17 @@ runs:
         WORKING_DIR: ${{ inputs.working-directory }}
         SEED_DRIFT: ${{ inputs.seed-drift }}
       run: |
-        # Use seed-schema (partial) for normal runs, full schemaModel for drift runs
-        if [ "$SEED_DRIFT" == "true" ]; then
-          SOURCE="schemaModel"
-        else
-          SOURCE="seed-schema"
+        TOML="$WORKING_DIR/flyway.toml"
+
+        # For normal runs, temporarily point schemaModelLocation at the partial seed-schema
+        # so prepare only generates a script for the users table (not orders).
+        # For drift runs, use the full schemaModel so the snapshot covers everything.
+        if [ "$SEED_DRIFT" != "true" ]; then
+          sed -i 's|schemaModelLocation = "schemaModel"|schemaModelLocation = "seed-schema"|' "$TOML"
         fi
 
         flyway prepare \
-          -source="$SOURCE" \
+          -source=schemaModel \
           -target="$TARGET_ENV" \
           -environments.${TARGET_ENV}.password="$TARGET_PASSWORD" \
           -workingDirectory="$WORKING_DIR" \
@@ -73,7 +75,8 @@ runs:
           -deploy.saveSnapshot=true \
           -outputType=json -skipCheckForUpdate
 
-        # Clean up seed artifacts so the real workflow steps start fresh
+        # Restore toml and clean up seed artifacts
+        git checkout -- "$TOML"
         rm -rf "$WORKING_DIR/deployments"
 
     - name: Introduce out-of-band change (simulate drift)
