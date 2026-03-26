@@ -33,13 +33,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Install Flyway Enterprise
+        uses: red-gate/setup-flyway@v3
+        with:
+          edition: enterprise
+          i-agree-to-the-eula: true
+          email: ${{ secrets.FLYWAY_EMAIL }}
+          token: ${{ secrets.FLYWAY_TOKEN }}
+
       - name: Setup demo environment
         uses: ./.github/actions/setup-state-demo
         with:
           sqlserver-container-id: ${{ job.services.sqlserver.id }}
           database-name: FlywaySample_State_Prod
-          flyway-email: ${{ secrets.FLYWAY_EMAIL }}
-          flyway-token: ${{ secrets.FLYWAY_TOKEN }}
           working-directory: flyway-state
 
       - name: Prepare deployment script
@@ -70,13 +76,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Install Flyway Enterprise
+        uses: red-gate/setup-flyway@v3
+        with:
+          edition: enterprise
+          i-agree-to-the-eula: true
+          email: ${{ secrets.FLYWAY_EMAIL }}
+          token: ${{ secrets.FLYWAY_TOKEN }}
+
       - name: Setup demo environment
         uses: ./.github/actions/setup-state-demo
         with:
           sqlserver-container-id: ${{ job.services.sqlserver.id }}
           database-name: FlywaySample_State_Prod
-          flyway-email: ${{ secrets.FLYWAY_EMAIL }}
-          flyway-token: ${{ secrets.FLYWAY_TOKEN }}
           working-directory: flyway-state
 
       - name: Deploy changes

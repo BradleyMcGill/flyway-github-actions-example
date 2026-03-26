@@ -1,5 +1,6 @@
 [flyway]
 defaultSchema = "dbo"
+schemaModelLocation = "schemaModel"
 
 [environments.staging]
 url = "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_State_Staging;encrypt=true;trustServerCertificate=true"
