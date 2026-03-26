@@ -5,7 +5,7 @@ report.json
 
 # Flyway Desktop
 .flywayoperator/
-schemaModel/
+flyway/schemaModel/
 
 # OS
 Thumbs.db
