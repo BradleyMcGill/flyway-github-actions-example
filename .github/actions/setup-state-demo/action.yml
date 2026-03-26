@@ -44,6 +44,20 @@ runs:
         docker exec ${{ inputs.sqlserver-container-id }} /opt/mssql-tools18/bin/sqlcmd \
           -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "CREATE DATABASE [${{ inputs.database-name }}]"
 
+    - name: Prepare seed deployment script
+      if: inputs.seed-drift == 'true'
+      uses: red-gate/flyway-actions/state/prepare@v2
+      with:
+        target-environment: ${{ inputs.target-environment }}
+        target-password: ${{ inputs.target-password }}
+        skip-drift-check: true
+        skip-code-review: true
+        skip-deployment-changes-report: true
+        skip-deployment-script-upload: true
+        skip-pre-deployment-report-upload: true
+        generate-undo: false
+        working-directory: ${{ inputs.working-directory }}
+
     - name: Seed target database with current schema model
       if: inputs.seed-drift == 'true'
       uses: red-gate/flyway-actions/state/deploy@v2
@@ -51,6 +65,7 @@ runs:
         target-environment: ${{ inputs.target-environment }}
         target-password: ${{ inputs.target-password }}
         skip-drift-check: true
+        skip-deployment-report-upload: true
         working-directory: ${{ inputs.working-directory }}
 
     - name: Introduce out-of-band change (simulate drift)
