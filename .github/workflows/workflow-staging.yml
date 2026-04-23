@@ -1,0 +1,54 @@
+# Workflows are the key to CI/CD for Flyway projects in GitHub repositories. 
+# Learn about GitHub workflows, where they go in your repository, and how they're triggered (https://docs.github.com/en/actions/concepts/workflows-and-actions/workflows)
+
+# Secrets are recommended for storing details for logging into Flyway and your databases. 
+# Learn how to create secrets (e.g. ${{ secrets.EMAIL }}) for your repository, and reference them in your workflow (https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
+
+name: Deploy changes
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prepare-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    # Check out the repository
+    - name: Checkout
+      uses: actions/checkout@v6
+    # Download and auth Flyway
+    - name: Setup Flyway
+      uses: red-gate/setup-flyway@v3
+      with:
+        edition: enterprise
+        i-agree-to-the-eula: true
+        email: "${{ secrets.FLYWAY_EMAIL }}"
+        token: "${{ secrets.FLYWAY_TOKEN }}"
+    
+
+    - name: Setup demo environment
+      uses: ./.github/actions/setup-demo
+      with:
+        sqlserver-container-id: ${{ job.services.sqlserver.id }}
+        database-name: FlywaySample_Staging
+        create-build-db: "false"
+        working-directory: flyway
+
+
+    # Compare schema model and target database to generate deployment script and report
+    - name: Prepare deployment script
+      uses: red-gate/flyway-actions/state/prepare@v2
+      with:
+        target-environment: staging
+        target-password: "${{ secrets.STAGING_DATABASE_PASSWORD }}"
+        # Working directory is the path from your repo root to your Flyway project 
+        working-directory: flyway-state
+    # Run deployment script, deploying changes to target
+    - name: Deploy changes
+      uses: red-gate/flyway-actions/state/deploy@v2
+      with:
+        target-environment: staging
+        target-user: "${{ secrets.FLYWAY_USER }}"
+        target-password: "${{ secrets.STAGING_DATABASE_PASSWORD }}"
+        # Working directory is the path from your repo root to your Flyway project 
+        working-directory: flyway-state
