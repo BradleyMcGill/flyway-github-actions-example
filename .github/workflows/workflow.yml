@@ -1,9 +1,3 @@
-# Workflows are the key to CI/CD for Flyway projects in GitHub repositories. 
-# Learn about GitHub workflows, where they go in your repository, and how they're triggered (https://docs.github.com/en/actions/concepts/workflows-and-actions/workflows)
-
-# Secrets are recommended for storing details for logging into Flyway and your databases. 
-# Learn how to create secrets (e.g. ${{ secrets.EMAIL }}) for your repository, and reference them in your workflow (https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
-
 name: Deploy migrations
 
 on:
