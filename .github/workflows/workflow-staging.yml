@@ -42,7 +42,7 @@ jobs:
       with:
         sqlserver-container-id: ${{ job.services.sqlserver.id }}
         database-name: FlywaySample_State_Staging
-        seed-drift: 'true'
+        seed-drift: 'false'
         target-environment: staging
         target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
         working-directory: flyway-state
