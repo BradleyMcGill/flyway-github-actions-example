@@ -11,6 +11,7 @@ on:
 
 jobs:
   migrations-deploy:
+    name: test
     runs-on: ubuntu-latest
     environment: staging
     services:
