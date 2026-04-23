@@ -12,6 +12,17 @@ on:
 jobs:
   prepare-and-deploy:
     runs-on: ubuntu-latest
+    environment: staging
+    env:
+      BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+        ports:
+          - 1433:1433
     steps:
     # Check out the repository
     - name: Checkout
@@ -27,12 +38,14 @@ jobs:
     
 
     - name: Setup demo environment
-      uses: ./.github/actions/setup-demo
+      uses: ./.github/actions/setup-state-demo
       with:
         sqlserver-container-id: ${{ job.services.sqlserver.id }}
-        database-name: FlywaySample_Staging
-        create-build-db: "false"
-        working-directory: flyway
+        database-name: FlywaySample_State_Staging
+        seed-drift: 'true'
+        target-environment: staging
+        target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
+        working-directory: flyway-state
 
 
     # Compare schema model and target database to generate deployment script and report
