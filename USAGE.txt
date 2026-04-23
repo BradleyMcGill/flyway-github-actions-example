@@ -1,0 +1,52 @@
+How to use this repo
+=====================
+
+This is a demo of Redgate Flyway with GitHub Actions for automated SQL Server
+deployments. It shows two approaches side by side:
+
+  flyway/        - migration-based (versioned V###__*.sql + U###__*.sql)
+  flyway-state/  - state-based (desired schema in schemaModel/)
+
+See README.md for the full walkthrough. Quick path to a working demo:
+
+1. One-time setup in your GitHub repo
+   - Create environments: ci, staging, production-read-only, production.
+     Add required reviewers on `production` for the approval gate.
+   - Add secrets:
+       FLYWAY_EMAIL                  Flyway Enterprise license email
+       FLYWAY_TOKEN                  Flyway Enterprise license token
+       STAGING_DATABASE_PASSWORD     SA password (staging container)
+       PRODUCTION_DATABASE_PASSWORD  SA password (production container)
+       BUILD_DATABASE_PASSWORD       SA password (build container)
+     For the demo, use the same value for all password secrets.
+
+2. Run the workflows (Actions tab -> pick workflow -> Run workflow)
+
+   Migration-based:
+     CI - Migration Checks        Pre-deploy checks; set seed-drift: true
+                                  to see drift detection
+     Deploy to Staging            Checks then deploy migrations to staging
+     Deploy to Production         Checks + deploy, both behind approvals
+     Undo Production Migration    Roll back last (or down to) version
+
+   State-based:
+     State: Deploy to Staging     Diff schemaModel -> staging, then deploy.
+                                  Set seed-drift: true for the drift demo
+     State: Deploy to Production  Same flow, gated by approvals
+
+3. Where to look
+   - Configuration:       flyway/flyway.toml, flyway-state/flyway.toml
+   - Migrations:          flyway/migrations/
+   - Desired schema:      flyway-state/schemaModel/
+   - Workflows:           .github/workflows/
+   - Composite actions:   .github/actions/setup-demo, setup-state-demo
+
+4. Artifacts produced by each run
+   - Deployment changes report
+   - Deployment script (dry-run review)
+   - Drift resolution scripts (when drift is detected)
+
+Contributing
+------------
+Work on a feature branch, open a PR into main. CI runs the migration checks
+against staging automatically on PRs.
