@@ -1,0 +1,67 @@
+# Workflows are the key to CI/CD for Flyway projects in GitHub repositories. 
+# Learn about GitHub workflows, where they go in your repository, and how they're triggered (https://docs.github.com/en/actions/concepts/workflows-and-actions/workflows)
+
+# Secrets are recommended for storing details for logging into Flyway and your databases. 
+# Learn how to create secrets (e.g. ${{ secrets.EMAIL }}) for your repository, and reference them in your workflow (https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
+
+name: Deploy migrations
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrations-deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+        ports:
+          - 1433:1433
+
+    steps:
+    # Check out the repository
+    - name: Checkout
+      uses: actions/checkout@v6
+    # Download and auth Flyway
+    - name: Setup Flyway
+      uses: red-gate/setup-flyway@v3
+      with:
+        edition: enterprise
+        i-agree-to-the-eula: true
+        email: "${{ secrets.FLYWAY_EMAIL }}"
+        token: "${{ secrets.FLYWAY_TOKEN }}"
+
+    
+    - name: Setup demo environment
+        uses: ./.github/actions/setup-demo
+        with:
+          sqlserver-container-id: ${{ job.services.sqlserver.id }}
+          database-name: FlywaySample_Staging
+          create-build-db: "true"
+          working-directory: flyway
+
+    
+    # Run checks
+    - name: Run deployment checks and generate reports
+      uses: red-gate/flyway-actions/migrations/checks@v2
+      with:
+        target-environment: staging
+        target-password: "${{ secrets.STAGING_DATABASE_PASSWORD }}"
+        build-environment: build
+        build-password: "${{ secrets.BUILD_DATABASE_PASSWORD }}"
+        # The build environment will be erased - set build-ok-to-erase to true if that's okay
+        build-ok-to-erase: true
+        # Working directory is the path from your repo root to your Flyway project 
+        working-directory: flyway
+    # Deploy changes
+    - name: Run migrations deployment
+      uses: red-gate/flyway-actions/migrations/deploy@v2
+      with:
+        target-environment: staging
+        target-password: "${{ secrets.STAGING_DATABASE_PASSWORD }}"
+        # Working directory is the path from your repo root to your Flyway project 
+        working-directory: flyway
