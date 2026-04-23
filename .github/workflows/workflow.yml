@@ -13,6 +13,8 @@ jobs:
   migrations-deploy:
     runs-on: ubuntu-latest
     environment: staging
+    env:
+      BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
     services:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
