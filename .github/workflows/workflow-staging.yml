@@ -50,7 +50,7 @@ jobs:
 
     # Compare schema model and target database to generate deployment script and report
     - name: Prepare deployment script
-      uses: red-gate/flyway-actions/state/prepare@v2
+      uses: red-gate/flyway-actions/state/prepare@sarif-code-scanning-upload
       with:
         target-environment: staging
         target-password: "${{ secrets.STAGING_DATABASE_PASSWORD }}"
@@ -58,7 +58,7 @@ jobs:
         working-directory: flyway-state
     # Run deployment script, deploying changes to target
     - name: Deploy changes
-      uses: red-gate/flyway-actions/state/deploy@v2
+      uses: red-gate/flyway-actions/state/deploy@sarif-code-scanning-upload
       with:
         target-environment: staging
         target-user: "${{ secrets.FLYWAY_USER }}"
