@@ -1,0 +1,28 @@
+[flyway]
+defaultSchema = "dbo"
+locations = ["filesystem:migrations"]
+schemaModelLocation = "schemaModel"
+
+[environments.dev]
+url = "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Hybrid_Dev;encrypt=true;trustServerCertificate=true"
+user = "sa"
+password = "${DEV_DATABASE_PASSWORD}"
+schemas = ["dbo"]
+
+[environments.staging]
+url = "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Hybrid_Staging;encrypt=true;trustServerCertificate=true"
+user = "sa"
+password = "${STAGING_DATABASE_PASSWORD}"
+schemas = ["dbo"]
+
+[environments.production]
+url = "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Hybrid_Prod;encrypt=true;trustServerCertificate=true"
+user = "sa"
+password = "${PRODUCTION_DATABASE_PASSWORD}"
+schemas = ["dbo"]
+
+[environments.build]
+url = "jdbc:sqlserver://localhost:1433;databaseName=FlywaySample_Hybrid_Build;encrypt=true;trustServerCertificate=true"
+user = "sa"
+password = "${BUILD_DATABASE_PASSWORD}"
+schemas = ["dbo"]
