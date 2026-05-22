@@ -1,0 +1,56 @@
+name: Generate Flyway migrations
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'flyway-state/schemaModel/**'
+
+jobs:
+  generate:
+    name: Generate migrations from schema model
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BUILD_DATABASE_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: ${{ secrets.BUILD_DATABASE_PASSWORD }}
+        ports:
+          - 1433:1433
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Install Flyway Enterprise
+        uses: red-gate/setup-flyway@v3
+        with:
+          edition: enterprise
+          i-agree-to-the-eula: true
+          email: ${{ secrets.FLYWAY_EMAIL }}
+          token: ${{ secrets.FLYWAY_TOKEN }}
+
+      - name: Wait for SQL Server and create build database
+        run: |
+          for i in {1..30}; do
+            docker exec ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd \
+              -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "SELECT 1" > /dev/null 2>&1 && break
+            echo "Waiting for SQL Server... ($i/30)"
+            sleep 2
+          done
+          docker exec ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U sa -P "$BUILD_DATABASE_PASSWORD" -C -Q "CREATE DATABASE [FlywaySample_State_Build]"
+        shell: bash
+
+      - name: Generate migrations
+        uses: red-gate/flyway-actions/migrations/generate@migration-generation
+        with:
+          source: schemaModel
+          build-environment: build
+          working-directory: flyway-state
