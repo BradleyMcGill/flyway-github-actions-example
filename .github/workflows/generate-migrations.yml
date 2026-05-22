@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize]
     paths:
-      - 'flyway-state/schemaModel/**'
+      - 'flyway-hybrid/schemaModel/**'
 
 jobs:
   generate:
