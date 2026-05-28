@@ -1,0 +1,5 @@
+CREATE PROCEDURE dbo.GetAllUsers
+AS
+BEGIN
+    SELECT * FROM dbo.users WITH (NOLOCK);
+END;

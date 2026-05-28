@@ -52,7 +52,7 @@ jobs:
           working-directory: flyway-state
 
       - name: Prepare deployment script
-        uses: red-gate/flyway-actions/state/prepare@v2
+        uses: red-gate/flyway-actions/state/prepare@sarif-code-scanning-upload
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
@@ -60,7 +60,7 @@ jobs:
           working-directory: flyway-state
 
       - name: Deploy changes
-        uses: red-gate/flyway-actions/state/deploy@v2
+        uses: red-gate/flyway-actions/state/deploy@sarif-code-scanning-upload
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}

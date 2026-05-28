@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'flyway/**'
+      - '.github/workflows/ci-checks.yml'
+      - '.github/actions/setup-demo/**'
   workflow_dispatch:
     inputs:
       seed-drift:
@@ -52,7 +54,7 @@ jobs:
           working-directory: flyway
 
       - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v2
+        uses: red-gate/flyway-actions/migrations/checks@sarif-code-scanning-upload
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}

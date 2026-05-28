@@ -39,7 +39,7 @@ jobs:
           working-directory: flyway
 
       - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v2
+        uses: red-gate/flyway-actions/migrations/checks@sarif-code-scanning-upload
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
@@ -49,7 +49,7 @@ jobs:
           working-directory: flyway
 
       - name: Deploy migrations
-        uses: red-gate/flyway-actions/migrations/deploy@v2
+        uses: red-gate/flyway-actions/migrations/deploy@sarif-code-scanning-upload
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}

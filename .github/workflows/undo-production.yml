@@ -43,7 +43,7 @@ jobs:
           working-directory: flyway
 
       - name: Deploy migrations (seed database)
-        uses: red-gate/flyway-actions/migrations/deploy@v2
+        uses: red-gate/flyway-actions/migrations/deploy@sarif-code-scanning-upload
         with:
           target-environment: production
           target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
@@ -51,7 +51,7 @@ jobs:
           working-directory: flyway
 
       - name: Undo migration
-        uses: red-gate/flyway-actions/migrations/undo@v2
+        uses: red-gate/flyway-actions/migrations/undo@sarif-code-scanning-upload
         with:
           target-environment: production
           target-password: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
