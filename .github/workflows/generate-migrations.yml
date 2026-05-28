@@ -49,7 +49,7 @@ jobs:
         shell: bash
 
       - name: Generate migrations
-        uses: red-gate/flyway-actions/migrations/generate@migration-generation
+        uses: red-gate/flyway-actions/migrations/generate@v2
         with:
           source: schemaModel
           build-environment: build
