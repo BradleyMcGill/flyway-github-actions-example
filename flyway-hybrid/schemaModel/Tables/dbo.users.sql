@@ -2,6 +2,7 @@ CREATE TABLE [dbo].[users]
 (
 [id] [int] NOT NULL IDENTITY(1, 1),
 [username] [nvarchar] (255) NOT NULL,
+[test] [nvarchar] (255) NOT NULL,
 [email] [nvarchar] (255) NOT NULL,
 [password_hash] [nvarchar] (255) NOT NULL,
 [created_at] [datetime2] NOT NULL CONSTRAINT [DF_users_created_at] DEFAULT (getutcdate()),
