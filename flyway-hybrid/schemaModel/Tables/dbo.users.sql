@@ -5,7 +5,8 @@ CREATE TABLE [dbo].[users]
 [email] [nvarchar] (255) NOT NULL,
 [password_hash] [nvarchar] (255) NOT NULL,
 [created_at] [datetime2] NOT NULL CONSTRAINT [DF_users_created_at] DEFAULT (getutcdate()),
-[updated_at] [datetime2] NOT NULL CONSTRAINT [DF_users_updated_at] DEFAULT (getutcdate())
+[updated_at] [datetime2] NOT NULL CONSTRAINT [DF_users_updated_at] DEFAULT (getutcdate()),
+[phone_number] [nvarchar] (20) NULL
 )
 GO
 ALTER TABLE [dbo].[users] ADD CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
@@ -15,4 +16,6 @@ GO
 ALTER TABLE [dbo].[users] ADD CONSTRAINT [UQ_users_email] UNIQUE NONCLUSTERED ([email])
 GO
 CREATE NONCLUSTERED INDEX [idx_users_email] ON [dbo].[users] ([email])
+GO
+CREATE NONCLUSTERED INDEX [idx_users_phone] ON [dbo].[users] ([phone_number])
 GO
