@@ -15,6 +15,9 @@ on:
 
 jobs:
   checks:
+    permissions:
+      contents: read
+      security-events: write
     name: Pre-deployment checks
     runs-on: ubuntu-latest
     environment: ci
@@ -52,7 +55,7 @@ jobs:
           working-directory: flyway
 
       - name: Run pre-deployment checks
-        uses: red-gate/flyway-actions/migrations/checks@v2
+        uses: red-gate/flyway-actions/migrations/checks@main
         with:
           target-environment: staging
           target-password: ${{ secrets.STAGING_DATABASE_PASSWORD }}
