@@ -26,7 +26,7 @@ jobs:
           'pwsh not found on PATH'
 
       - name: Setup Flyway
-        uses: red-gate/setup-flyway@bc88bd38acc17ff76475f003ae6d05465a7b3c68
+        uses: red-gate/setup-flyway@20da316a392ef1d9d69aaadb0b41f0a8cb0d6ddb
         env:
           PATH: ${{ steps.no-pwsh.outputs.path }}
         with:
