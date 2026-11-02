@@ -1,0 +1,39 @@
+name: setup-flyway on Windows PowerShell 5.1
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  setup-flyway-ps51:
+    runs-on: windows-latest
+    steps:
+      - name: Build PATH without pwsh 7
+        id: no-pwsh
+        shell: pwsh
+        run: |
+          $kept = $env:PATH -split ';' | Where-Object { $_ -and -not (Test-Path -LiteralPath (Join-Path $_ 'pwsh.exe') -ErrorAction SilentlyContinue) }
+          "path=$($kept -join ';')" >> $env:GITHUB_OUTPUT
+
+      - name: Show pwsh is hidden and PowerShell is 5.1
+        shell: powershell
+        env:
+          PATH: ${{ steps.no-pwsh.outputs.path }}
+        run: |
+          "PSVersion: $($PSVersionTable.PSVersion)"
+          $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+          if ($pwsh) { throw "pwsh still on PATH: $($pwsh.Source)" }
+          'pwsh not found on PATH'
+
+      - name: Setup Flyway
+        uses: red-gate/setup-flyway@bc88bd38acc17ff76475f003ae6d05465a7b3c68
+        env:
+          PATH: ${{ steps.no-pwsh.outputs.path }}
+        with:
+          version: 13.11.1
+          edition: community
+          i-agree-to-the-eula: true
+
+      - name: Flyway version
+        shell: powershell
+        run: flyway --version
