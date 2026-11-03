@@ -54,6 +54,35 @@ jobs:
           node --version || true
           [ "${{ steps.setup.outcome }}" = success ]
 
+  krypton:
+    name: ${{ matrix.image }} | lts/krypton | libatomic absent
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+      options: --user 0
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['ubuntu:24.04', 'debian:12-slim', 'ghcr.io/actions/actions-runner:2.337.0']
+    steps:
+      - name: Report glibc and libatomic
+        shell: bash
+        run: |
+          ldd --version | sed -n 1p
+          ls /usr/lib/*/libatomic.so.1 2>/dev/null || echo "libatomic.so.1 MISSING"
+
+      - name: Install Node.js (lts/krypton, proposed flyway-actions input)
+        uses: actions/setup-node@v7
+        with:
+          node-version: 'lts/krypton'
+
+      - name: Assert Node 24
+        shell: bash
+        run: |
+          node_version="$(node --version)"
+          echo "node --version: $node_version"
+          [[ "$node_version" == v24.* ]]
+
   hosted-control:
     name: ubuntu-latest (no container) | lts/*
     runs-on: ubuntu-latest
