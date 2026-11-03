@@ -72,10 +72,15 @@ jobs:
           ldd --version | sed -n 1p
           ls /usr/lib/*/libatomic.so.1 2>/dev/null || echo "libatomic.so.1 MISSING"
 
+      - name: Remove cached Node 24 to force a download, like an empty self-hosted tool cache
+        if: matrix.toolcache == 'empty'
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TOOL_CACHE"/node/24.*
+          ls "$RUNNER_TOOL_CACHE"/node
+
       - name: Install Node.js (lts/krypton, proposed flyway-actions input)
         uses: actions/setup-node@v7
-        env:
-          RUNNER_TOOL_CACHE: ${{ matrix.toolcache == 'empty' && '/tmp/empty-toolcache' || runner.tool_cache }}
         with:
           node-version: 'lts/krypton'
 
