@@ -32,7 +32,7 @@ jobs:
       - name: Report glibc and libatomic
         shell: bash
         run: |
-          ldd --version | head -1
+          ldd --version | sed -n 1p
           ls /usr/lib/*/libatomic.so.1 2>/dev/null || echo "libatomic.so.1 MISSING"
 
       - name: Install libatomic1
